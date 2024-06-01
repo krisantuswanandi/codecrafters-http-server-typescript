@@ -1,4 +1,5 @@
 import * as net from "net";
+import fs from "fs";
 
 const server = net.createServer((socket) => {
   socket.on("data", (data) => {
@@ -18,6 +19,18 @@ const server = net.createServer((socket) => {
       socket.write(
         `HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: ${str.length}\r\n\r\n${str}`
       );
+    } else if (path.startsWith("/files/")) {
+      const dir = process.argv[2] === "--directory" ? process.argv[3] : "";
+      const filename = path.replace("/files/", "");
+      const filepath = `${dir}/${filename}`;
+      try {
+        const content = fs.readFileSync(filepath);
+        socket.write(
+          `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\nContent-Length: ${content.length}\r\n\r\n${content}`
+        );
+      } catch {
+        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      }
     } else {
       socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
     }
